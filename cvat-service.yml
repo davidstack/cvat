@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: kubeflow-cvat
+  name: kubeflow-cvat
+  namespace: kubeflow
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http-port
+  - port: 8443
+    targetPort: 8443
+    name: https-port    
+  selector:
+    name: kubeflow-cvat

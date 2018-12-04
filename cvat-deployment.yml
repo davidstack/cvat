@@ -1,0 +1,74 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cvat
+  namespace: kubeflow
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: kubeflow-cvat
+    spec:
+      containers: 
+        - name: postgres
+          image: "postgres:10.3-alpine"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_USER
+              value: root
+            - name: POSTGRES_DB
+              value: cvat 
+          volumeMounts:
+            - name: cvat-db
+              mountPath: /var/lib/postgresql/data 
+          ports:
+            - name: postgres-port
+              containerPort: 5432                       
+        - name: redis
+          image: "redis:4.0.5-alpine"
+          imagePullPolicy: IfNotPresent
+        - name: cvat
+          image: "cvat:latest"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DJANGO_MODWSGI_EXTRA_ARGS
+              value: ""        
+            - name: ALLOWED_HOSTS
+              value: "100.2.28.244"                   
+          volumeMounts:
+            - name: cvat-data
+              mountPath: /home/django/data 
+            - name: cvat-keys
+              mountPath: /home/django/keys 
+            - name: cvat-logs
+              mountPath: /home/django/logs    
+          ports:
+            - name: cvat-port
+              containerPort: 8080               
+            - name: cvat-port-https
+              containerPort: 8443                           
+          livenessProbe:
+            tcpSocket:
+              port: cvat-port
+            initialDelaySeconds: 120
+            timeoutSeconds: 15  
+            periodSeconds: 60                   
+      nodeSelector: 
+        kubernetes.io/hostname: 100.2.28.244              
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime    
+      - name: cvat-db
+        hostPath:
+          path: /data/cvat/postgres     
+      - name: cvat-data
+        hostPath:
+          path: /data/cvat/cvat/data 
+      - name: cvat-keys
+        hostPath:
+          path: /data/cvat/cvat/keys 
+      - name: cvat-logs
+        hostPath:
+          path: /data/cvat/cvat/logs          
